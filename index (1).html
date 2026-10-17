@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doomsday Clock İzle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Layout: tek sayfa, sabit yüzen menü, arkada saat kadranı motifi; oynatıcı sayfanın merkezi. */
+  :root {
+    --ink: #07080c;
+    --ink-2: #0f1119;
+    --line: rgba(226, 230, 240, .12);
+    --bone: #ebe8e1;
+    --mute: #8f95a6;
+    --amber: #f2a93b;
+    --steel: #6f86b3;
+
+    --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+    --body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --gutter: max(18px, env(safe-area-inset-left, 0px));
+    --ease: cubic-bezier(.22, .8, .24, 1);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--bone);
+    font: 400 16px/1.6 var(--body);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
+  section { scroll-margin-top: 96px; }
+  .wrap { width: min(1180px, 100%); margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* ---------- Menü ---------- */
+  .bar {
+    position: fixed; z-index: 50; top: 14px; left: 0; right: 0;
+    display: flex; justify-content: center; padding-inline: var(--gutter);
+    pointer-events: none;
+  }
+  .bar-inner {
+    pointer-events: auto;
+    display: flex; align-items: center; gap: 28px;
+    padding: 8px 8px 8px 20px;
+    background: rgba(15, 17, 25, .66);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .45);
+    transition: background .4s var(--ease), padding .4s var(--ease);
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px; text-decoration: none;
+    font: 900 19px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap;
+  }
+  .brand svg { width: 22px; height: 22px; flex: none; }
+  .links { position: relative; display: flex; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .links a {
+    position: relative; z-index: 1; display: block; padding: 9px 18px; border-radius: 999px;
+    text-decoration: none; font: 500 14px/1 var(--body); color: var(--mute);
+    transition: color .3s var(--ease);
+  }
+  .links a:hover, .links a.on { color: var(--bone); }
+  .pill {
+    position: absolute; z-index: 0; top: 0; left: 0; height: 100%;
+    border-radius: 999px; background: rgba(235, 232, 225, .09);
+    border: 1px solid var(--line);
+    transition: transform .5s var(--ease), width .5s var(--ease), opacity .3s;
+    opacity: 0; pointer-events: none;
+  }
+  .go {
+    padding: 11px 20px; border-radius: 999px; background: var(--amber); color: #1a1205;
+    font: 600 14px/1 var(--body); text-decoration: none; white-space: nowrap;
+    transition: transform .3s var(--ease), box-shadow .3s var(--ease);
+  }
+  .go:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(242, 169, 59, .35); }
+  .burger {
+    display: none; width: 44px; height: 44px; border: 0; border-radius: 50%;
+    background: rgba(235, 232, 225, .09); color: var(--bone); cursor: pointer; position: relative;
+  }
+  .burger span {
+    position: absolute; left: 13px; right: 13px; height: 2px; background: currentColor; border-radius: 2px;
+    transition: transform .45s var(--ease), top .45s var(--ease), opacity .2s;
+  }
+  .burger span:nth-child(1) { top: 16px; }
+  .burger span:nth-child(2) { top: 21px; }
+  .burger span:nth-child(3) { top: 26px; }
+  .menu-open .burger span:nth-child(1) { top: 21px; transform: rotate(45deg); }
+  .menu-open .burger span:nth-child(2) { opacity: 0; }
+  .menu-open .burger span:nth-child(3) { top: 21px; transform: rotate(-45deg); }
+
+  /* ---------- Ana sayfa ---------- */
+  .hero { position: relative; padding-block: 150px 90px; overflow: clip; min-height: 640px; }
+  .hero::before {
+    content: ""; position: absolute; inset: -20% -10% auto auto; width: 70%; height: 120%;
+    background: radial-gradient(closest-side, rgba(111, 134, 179, .20), transparent 70%);
+    pointer-events: none;
+  }
+  .clock {
+    position: absolute; right: -6%; top: 50%; width: min(760px, 92vw); aspect-ratio: 1;
+    transform: translateY(-50%); opacity: .9; pointer-events: none;
+  }
+  .clock svg { width: 100%; height: 100%; display: block; }
+  .tick { stroke: rgba(235, 232, 225, .22); stroke-width: 1.2; }
+  .tick.big { stroke: rgba(235, 232, 225, .55); stroke-width: 2.4; }
+  .tick.mid { stroke: var(--amber); stroke-width: 3.4; }
+  .ring { fill: none; stroke: var(--line); }
+  .minute { stroke: var(--bone); stroke-width: 5; stroke-linecap: round; }
+  .second { stroke: var(--amber); stroke-width: 1.8; stroke-linecap: round; transform-origin: 200px 200px; animation: sweep 60s steps(60) infinite; }
+  @keyframes sweep { to { transform: rotate(360deg); } }
+  .hub { fill: var(--amber); }
+
+  .hero-copy { position: relative; max-width: 640px; }
+  .eyebrow {
+    margin: 0 0 22px; font: 500 12.5px/1.4 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--amber);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .eyebrow::before { content: ""; width: 34px; height: 1px; background: var(--amber); }
+  h1 {
+    margin: 0; font: 900 clamp(64px, 12.5vw, 168px)/.84 var(--display); text-transform: uppercase; letter-spacing: -.005em;
+    text-wrap: balance;
+  }
+  h1 small {
+    display: block; margin-bottom: 14px; font: 700 clamp(22px, 3.2vw, 38px)/1 var(--display);
+    letter-spacing: .34em; color: var(--steel);
+  }
+  .lede { margin: 30px 0 0; max-width: 46ch; color: #c9c7c0; font-size: 18px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px; padding: 14px 24px; border-radius: 999px; border: 1px solid var(--line);
+    background: transparent; color: var(--bone); font: 600 15px/1 var(--body); text-decoration: none; cursor: pointer;
+    transition: transform .3s var(--ease), background .3s, border-color .3s;
+  }
+  .btn:hover { transform: translateY(-2px); border-color: rgba(235, 232, 225, .4); background: rgba(235, 232, 225, .06); }
+  .btn.solid { background: var(--amber); color: #1a1205; border-color: var(--amber); }
+  .btn.solid:hover { background: #f7b957; }
+  .btn svg { width: 16px; height: 16px; }
+
+  .rise { opacity: 0; transform: translateY(18px); animation: rise .9s var(--ease) forwards; }
+  .rise:nth-child(2) { animation-delay: .08s; }
+  .rise:nth-child(3) { animation-delay: .16s; }
+  .rise:nth-child(4) { animation-delay: .24s; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  /* ---------- Oynatıcı ---------- */
+  .watch { padding-block: 40px 110px; position: relative; }
+  .sec-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 26px; }
+  h2 { margin: 0; font: 900 clamp(40px, 6vw, 72px)/.9 var(--display); text-transform: uppercase; }
+  .tag { font: 400 12.5px/1.5 var(--mono); letter-spacing: .1em; color: var(--mute); text-transform: uppercase; }
+  .stage { position: relative; z-index: 41; }
+  .frame {
+    position: relative; aspect-ratio: 16 / 9; width: 100%; background: #000; border-radius: 6px; overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: 0 40px 120px rgba(0, 0, 0, .7), 0 0 0 1px rgba(0, 0, 0, .6);
+    transition: box-shadow .6s var(--ease);
+  }
+  .frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px; text-align: center;
+    background: radial-gradient(closest-side, rgba(111, 134, 179, .14), transparent 80%), var(--ink-2); }
+  .empty[hidden] { display: none; }
+  .empty-t { margin: 0; font: 900 clamp(26px, 5vw, 44px)/1 var(--display); text-transform: uppercase; letter-spacing: .04em; }
+  .empty-s { margin: 0; color: var(--mute); max-width: 44ch; font-size: 15px; }
+  .empty code { font: 500 13px var(--mono); color: var(--amber); }
+  .btn[hidden] { display: none; }
+  .btn[disabled] { opacity: .4; cursor: not-allowed; pointer-events: none; }
+  .corner { position: absolute; width: 18px; height: 18px; border: 0 solid var(--amber); z-index: 2; pointer-events: none; }
+  .corner.tl { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+  .corner.tr { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
+  .corner.bl { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+  .corner.br { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+  .theater .frame { box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0), 0 0 160px rgba(242, 169, 59, .18); }
+  .scrim {
+    position: fixed; inset: 0; z-index: 40; background: rgba(2, 3, 5, .92);
+    opacity: 0; pointer-events: none; transition: opacity .6s var(--ease);
+  }
+  .theater .scrim { opacity: 1; pointer-events: auto; }
+  .theater .bar { opacity: .25; transition: opacity .4s; }
+  .theater .bar:hover { opacity: 1; }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; }
+  .tools .btn { padding: 11px 18px; font-size: 14px; }
+  .tools .btn[aria-pressed="true"] { background: rgba(242, 169, 59, .14); border-color: var(--amber); color: var(--amber); }
+  .src { margin-left: auto; font: 400 12px/1.4 var(--mono); color: var(--mute); letter-spacing: .06em; }
+
+  /* ---------- Hakkında ---------- */
+  .about { padding-block: 90px 120px; border-top: 1px solid var(--line); background: linear-gradient(180deg, var(--ink-2), var(--ink)); }
+  .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 44px; border-top: 1px solid var(--line); }
+  .col { padding: 26px 28px 8px 0; min-width: 0; }
+  .col + .col { padding-left: 28px; border-left: 1px solid var(--line); }
+  .col h3 { margin: 0 0 10px; font: 700 26px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--bone); }
+  .col p { margin: 0; color: #b9b7b0; max-width: 38ch; }
+  .fine { margin-top: 60px; font: 400 12.5px/1.7 var(--mono); color: var(--mute); max-width: 76ch; }
+  footer { padding-block: 26px calc(30px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); color: var(--mute); font: 400 12.5px/1.5 var(--mono); }
+  footer .wrap { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+
+  /* ---------- Telefon ---------- */
+  @media (max-width: 820px) {
+    .bar { top: 10px; }
+    .bar-inner { width: 100%; justify-content: space-between; padding: 6px 6px 6px 18px; gap: 12px;
+      backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(15, 17, 25, .92); }
+    .go { display: none; }
+    .burger { display: block; }
+    .links {
+      position: fixed; inset: 0; z-index: -1; flex-direction: column; justify-content: center; gap: 6px;
+      padding: 90px var(--gutter) 40px; background: rgba(7, 8, 12, .97);
+      opacity: 0; pointer-events: none; transition: opacity .45s var(--ease);
+    }
+    .menu-open .links { opacity: 1; pointer-events: auto; }
+    .links a { font: 900 clamp(44px, 14vw, 72px)/1.05 var(--display); text-transform: uppercase; padding: 6px 0; color: var(--mute); border-radius: 0;
+      transform: translateY(24px); opacity: 0; transition: transform .6s var(--ease), opacity .6s var(--ease), color .3s; }
+    .menu-open .links a { transform: none; opacity: 1; }
+    .menu-open .links li:nth-child(2) a { transition-delay: .06s; }
+    .menu-open .links li:nth-child(3) a { transition-delay: .12s; }
+    .pill { display: none; }
+    .hero { padding-block: 120px 60px; min-height: 0; }
+    .clock { right: -30%; top: 38%; opacity: .45; }
+    .cols { grid-template-columns: minmax(0, 1fr); }
+    .col, .col + .col { padding: 22px 0; border-left: 0; }
+    .col + .col { border-top: 1px solid var(--line); }
+    .src { margin-left: 0; width: 100%; }
+    .about { padding-block: 64px 80px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .rise { animation: none; opacity: 1; transform: none; }
+    .second { animation: none; }
+    * { transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scrim" id="scrim"></div>
+
+<header class="bar" id="bar">
+  <div class="bar-inner">
+    <a class="brand" href="#home" aria-label="Ana sayfa">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6"/><path d="M12 12l4-2" stroke="#f2a93b"/></svg>
+      Doomsday Clock
+    </a>
+    <nav aria-label="Ana menü">
+      <ul class="links" id="links">
+        <li><a href="#home" class="on">Ana Sayfa</a></li>
+        <li><a href="#watch">İzle</a></li>
+        <li><a href="#about">Hakkında</a></li>
+        <span class="pill" id="pill"></span>
+      </ul>
+    </nav>
+    <a class="go" href="#watch">Videoyu aç</a>
+    <button class="burger" id="burger" aria-label="Menüyü aç" aria-expanded="false"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<main>
+  <section class="hero" id="home">
+    <div class="clock" aria-hidden="true">
+      <svg viewBox="0 0 400 400" id="face">
+        <circle class="ring" cx="200" cy="200" r="196"/>
+        <circle class="ring" cx="200" cy="200" r="150"/>
+        <line class="minute" x1="200" y1="200" x2="200" y2="70" transform="rotate(-9 200 200)"/>
+        <line class="second" x1="200" y1="226" x2="200" y2="30"/>
+        <circle class="hub" cx="200" cy="200" r="7"/>
+      </svg>
+    </div>
+    <div class="wrap">
+      <div class="hero-copy">
+        <p class="eyebrow rise">Video oynatıcı sayfası</p>
+        <h1 class="rise"><small>Avengers</small>Doomsday<br>Clock</h1>
+        <p class="lede rise">Videoyu bu sayfadan, YouTube'un kendi oynatıcısıyla izle. Tam ekran ve sinema modu hazır.</p>
+        <div class="cta rise">
+          <a class="btn solid" href="#watch">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>
+            Şimdi izle
+          </a>
+          <a class="btn" id="openYt" href="#watch" target="_blank" rel="noopener" hidden>YouTube'da aç</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="watch" id="watch">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>İzle</h2>
+        <span class="tag">Kaynak · YouTube</span>
+      </div>
+      <div class="stage" id="stage">
+        <div class="frame">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <iframe id="player" hidden
+            title="Video oynatıcı"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+            allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+          <div class="empty" id="empty">
+            <p class="empty-t">Video linki henüz eklenmedi</p>
+            <p class="empty-s">index.html dosyasında <code>VIDEO_URL</code> satırına YouTube linkini yapıştır.</p>
+          </div>
+        </div>
+        <div class="tools">
+          <button class="btn" id="theaterBtn" aria-pressed="false" type="button">Sinema modu</button>
+          <button class="btn" id="fsBtn" type="button">Tam ekran</button>
+          <button class="btn" id="copyBtn" type="button">Linki kopyala</button>
+          <span class="src" id="srcLabel"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about" id="about">
+    <div class="wrap">
+      <div class="sec-head"><h2>Hakkında</h2></div>
+      <div class="cols">
+        <div class="col">
+          <h3>Resmi oynatıcı</h3>
+          <p>Video, YouTube'un gömme oynatıcısı üzerinden akar. Kalite, altyazı ve hız ayarları oynatıcının kendi çarkında.</p>
+        </div>
+        <div class="col">
+          <h3>Sinema modu</h3>
+          <p>Sayfanın geri kalanını karartır, sadece videoyu bırakır. Çıkmak için Esc'ye bas ya da karanlık alana dokun.</p>
+        </div>
+        <div class="col">
+          <h3>Her ekranda</h3>
+          <p>Telefonda menü tam ekrana açılır, bilgisayarda üstte yüzer. Oynatıcı ekran genişliğine göre ölçeklenir.</p>
+        </div>
+      </div>
+      <p class="fine">Bu sayfa bağımsız bir hayran sayfasıdır. Marvel, Disney veya YouTube ile bağlantısı yoktur. Video ve içeriğin tüm hakları sahiplerine aittir.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap"><span>Doomsday Clock İzle</span><span>Video YouTube'dan oynatılır</span></div>
+</footer>
+
+<script>
+(function () {
+  // ===== AYAR: YouTube video linkini buraya yapıştır (boş bırakılırsa oynatıcı boş görünür) =====
+  var VIDEO_URL = "";
+  // ======================================================================================
+
+  var NS = 'http://www.w3.org/2000/svg';
+
+  function youtubeId(u) {
+    u = (u || '').trim();
+    if (!u) return '';
+    var m = u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|live\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    return /^[A-Za-z0-9_-]{11}$/.test(u) ? u : '';
+  }
+  var VID = youtubeId(VIDEO_URL);
+  var WATCH = VID ? 'https://www.youtube.com/watch?v=' + VID : '';
+  var player = document.getElementById('player');
+  if (VID) {
+    player.src = 'https://www.youtube-nocookie.com/embed/' + VID + '?rel=0&modestbranding=1&playsinline=1';
+    player.hidden = false;
+    document.getElementById('empty').hidden = true;
+    var o = document.getElementById('openYt');
+    o.href = WATCH; o.hidden = false;
+    document.getElementById('srcLabel').textContent = 'youtu.be/' + VID;
+  } else {
+    ['theaterBtn', 'fsBtn', 'copyBtn'].forEach(function (id) { document.getElementById(id).setAttribute('disabled', ''); });
+  }
+
+  // Kadran çizgileri
+  var face = document.getElementById('face');
+  var ring = face.querySelector('.minute');
+  for (var i = 0; i < 60; i++) {
+    var big = i % 5 === 0, top = i === 0;
+    var len = top ? 30 : big ? 20 : 9;
+    var l = document.createElementNS(NS, 'line');
+    l.setAttribute('x1', 200); l.setAttribute('x2', 200);
+    l.setAttribute('y1', 6); l.setAttribute('y2', 6 + len);
+    l.setAttribute('transform', 'rotate(' + (i * 6) + ' 200 200)');
+    l.setAttribute('class', 'tick' + (top ? ' mid' : big ? ' big' : ''));
+    face.insertBefore(l, ring);
+  }
+
+  // Menü göstergesi ve aktif bölüm
+  var links = Array.prototype.slice.call(document.querySelectorAll('#links a'));
+  var pill = document.getElementById('pill');
+  function movePill(a) {
+    if (!a || getComputedStyle(pill).display === 'none') return;
+    pill.style.width = a.offsetWidth + 'px';
+    pill.style.transform = 'translateX(' + a.offsetLeft + 'px)';
+    pill.style.opacity = 1;
+  }
+  function setActive(id) {
+    links.forEach(function (a) {
+      var on = a.getAttribute('href') === '#' + id;
+      a.classList.toggle('on', on);
+      if (on) movePill(a);
+    });
+  }
+  var sections = ['home', 'watch', 'about'].map(function (id) { return document.getElementById(id); });
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) setActive(e.target.id); });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    sections.forEach(function (s) { io.observe(s); });
+  }
+  window.addEventListener('resize', function () { setActive((links.filter(function (a) { return a.classList.contains('on'); })[0] || links[0]).getAttribute('href').slice(1)); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { movePill(links.filter(function (a) { return a.classList.contains('on'); })[0]); });
+  movePill(links[0]);
+
+  // Telefon menüsü
+  var burger = document.getElementById('burger');
+  function menu(open) {
+    document.body.classList.toggle('menu-open', open);
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+  burger.addEventListener('click', function () { menu(!document.body.classList.contains('menu-open')); });
+  links.forEach(function (a) { a.addEventListener('click', function () { menu(false); }); });
+
+  // Sinema modu
+  var theaterBtn = document.getElementById('theaterBtn');
+  function theater(on) {
+    document.body.classList.toggle('theater', on);
+    theaterBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    theaterBtn.textContent = on ? 'Sinema modundan çık' : 'Sinema modu';
+  }
+  theaterBtn.addEventListener('click', function () { theater(!document.body.classList.contains('theater')); });
+  document.getElementById('scrim').addEventListener('click', function () { theater(false); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { theater(false); menu(false); }
+  });
+
+  // Tam ekran
+  document.getElementById('fsBtn').addEventListener('click', function () {
+    var p = document.getElementById('player');
+    var f = p.requestFullscreen || p.webkitRequestFullscreen;
+    try { if (f) f.call(p); } catch (err) {}
+  });
+
+  // Linki kopyala
+  var copyBtn = document.getElementById('copyBtn');
+  copyBtn.addEventListener('click', function () {
+    var url = WATCH;
+    if (!url) return;
+    function done() { copyBtn.textContent = 'Kopyalandı'; setTimeout(function () { copyBtn.textContent = 'Linki kopyala'; }, 1800); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, function () { window.prompt('Linki kopyala:', url); });
+    } else { window.prompt('Linki kopyala:', url); }
+  });
+})();
+</script>
+</body>
+</html>
